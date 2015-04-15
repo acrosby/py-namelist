@@ -16,6 +16,7 @@ else:
 
 MODULE_NAME = "namelist"
 NML_LINE_LENGTH = 70
+INDENT = " "
 # Config file parser, called from the class initialization
 varname   = r'[a-zA-Z][a-zA-Z0-9_]*'
 valueBool = re.compile(r"(\.(true|false|t|f)\.)",re.I)
@@ -56,11 +57,13 @@ class Namelist(DictClass):
         namelist. If a value v is a sequence, an 1D fortran array representation
         is created using iter(v).
         """
-        retstr = "&%s\n" % str(self.name)
+        retstr = INDENT + "&%s\n" % str(self.name)
         for k, v in self.items():
             if hasattr(v, '__iter__'):
-                retstr += "%s = (/ " % k
+                retstr += INDENT + "%s = " % k
+                paramlen = len("%s = " % k) * " "
                 tmpstr = ""
+                firstline = True
                 for vv in v:
                     if isinstance(vv, bool):
                         if vv:
@@ -73,9 +76,13 @@ class Namelist(DictClass):
                     if len(tmpstr) > NML_LINE_LENGTH:
                         if vv == v[-1]:
                             tmpstr = tmpstr[:-1]
-                        retstr += tmpstr + " &\n"
+                        if firstline:
+                            retstr += INDENT + tmpstr + "\n"
+                            firstline = False
+                        else:
+                            retstr += INDENT + paramlen + tmpstr + "\n"
                         tmpstr = ""
-                retstr = retstr + tmpstr[:-1] + "/)\n"
+                retstr = retstr + INDENT + paramlen + tmpstr[:-1] + "\n"
             else:
                 if isinstance(v, bool):
                     if v:
@@ -84,8 +91,8 @@ class Namelist(DictClass):
                         rv = ".FALSE."
                 else:
                     rv = repr(v)
-                retstr += "%s = %s\n" % (str(k), rv)
-        retstr += "&end\n"
+                retstr += INDENT + "%s = %s\n" % (str(k), rv)
+        retstr += INDENT + "&end\n"
         return retstr
 
     def __repr__(self):
